@@ -110,6 +110,14 @@ const axios = require('axios');
         const block = shippingHeading.closest('div.Polaris-BlockStack');
         shippingAddress = block?.innerText.trim() || '';
       }
+      const billingHeading = Array.from(document.querySelectorAll('h3'))
+        .find(h => h.innerText.includes('Billing address'));
+
+      let billingAddress = '';
+      if (billingHeading) {
+        const block = billingHeading.closest('div.Polaris-BlockStack');
+        billingAddress = block?.innerText.trim() || '';
+      }
 
       let phone = '';
       const phoneMatch = shippingAddress.match(/(\+\d[\d\s\-().]+)/);
@@ -133,7 +141,7 @@ const axios = require('axios');
         });
       });
 
-      return { fullName, email, phone, shippingAddress, imageDetails };
+      return { fullName, email, phone, shippingAddress, billingAddress, imageDetails };
     });
 
     const result = {
