@@ -30,9 +30,9 @@ const fs = require('fs');
     }).filter(o => o.orderNumber && o.orderUrl);
   });
 
-  console.log('✅ Orders:', orders);
+  console.log('Orders:', orders);
   fs.writeFileSync('orders.json', JSON.stringify(orders, null, 2));
-  console.log('✅ Đã lưu orders.json');
+  console.log('Đã lưu orders.json');
 
   await browser.close();
 })();

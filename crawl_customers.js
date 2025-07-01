@@ -82,7 +82,7 @@ const axios = require('axios');
   const newOrders = orders.filter(o => !doneOrders.includes(o.orderNumber));
 
   if (!newOrders.length) {
-    console.log('✅ Không có đơn mới để crawl.');
+    console.log('Không có đơn mới để crawl.');
     return;
   }
 
@@ -93,7 +93,7 @@ const axios = require('axios');
   await page.setCookie(...cookies);
 
   for (const order of newOrders) {
-    console.log(`👉 Đang crawl ${order.orderNumber}: ${order.orderUrl}`);
+    console.log(`Đang crawl ${order.orderNumber}: ${order.orderUrl}`);
     await page.goto(order.orderUrl, { waitUntil: 'networkidle2', timeout: 0 });
 
     const customerInfo = await page.evaluate(() => {
@@ -124,14 +124,15 @@ const axios = require('axios');
     };
 
     customers.push(result);
-    console.log(`✅ Done ${order.orderNumber}:`, result);
+    console.log(`Done ${order.orderNumber}:`, result);
 
     // Gửi dữ liệu sang n8n
-    //await axios.post('http://localhost:5678/webhook/new-customer', result);
+    await axios.post(
+      'https://n8n.bloommedia.space/webhook/e56662f8-0ffd-43df-8868-85b762928c58', result);
   }
 
   fs.writeFileSync('customers.json', JSON.stringify(customers, null, 2));
-  console.log('✅ Đã lưu customers.json');
+  console.log('Đã lưu customers.json');
 
-  await browser.close();
+  //await browser.close();
 })();

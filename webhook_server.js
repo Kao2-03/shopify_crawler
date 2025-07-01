@@ -8,7 +8,8 @@ app.use(express.json());
 app.post('/shopify-webhook', (req, res) => {
   const order = req.body;
   const orderNumber = `#${order.order_number}`;
-  const orderUrl = `https://${order.myshopify_domain}/admin/orders/${order.id}`;
+  const domain = 'qiqbgd-as.myshopify.com';
+  const orderUrl = `https://${domain}/admin/orders/${order.id}`;
 
   console.log(`Đơn mới: ${orderNumber} - ${orderUrl}`);
 
