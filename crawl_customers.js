@@ -75,10 +75,13 @@ const axios = require('axios');
   const orders = JSON.parse(fs.readFileSync('orders.json'));
   let customers = [];
   if (fs.existsSync('customers.json')) {
-    customers = JSON.parse(fs.readFileSync('customers.json'));
+    const raw = fs.readFileSync('customers.json', 'utf-8').trim();
+    customers = raw ? JSON.parse(raw) : [];
   }
 
-  const doneOrders = customers.map(c => c.orderNumber);
+  const doneOrders = customers
+  //.filter(c => c.productDetails && Object.keys(c.productDetails).length > 0)
+  .map(c => c.orderNumber);
   const newOrders = orders.filter(o => !doneOrders.includes(o.orderNumber));
 
   if (!newOrders.length) {
@@ -114,7 +117,23 @@ const axios = require('axios');
         phone = phoneMatch[0].trim();
       }
 
-      return { fullName, email, phone, shippingAddress };
+      // Detail image custom
+    const imageDetails = {};
+    document.querySelectorAll('div.Polaris-BlockStack').forEach(block => {
+      const links = block.querySelectorAll('a');
+      links.forEach(a => {
+        if (a.innerText.trim() === 'Link') {
+          const labelNode = a.previousSibling || a.parentElement.previousSibling;
+          const label = labelNode?.textContent?.trim().replace(':', '') || 'Unknown';
+          const href = a.href.trim();
+          if (label && href) {
+            imageDetails[label] = href;
+            }
+          }
+        });
+      });
+
+      return { fullName, email, phone, shippingAddress, imageDetails };
     });
 
     const result = {

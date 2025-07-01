@@ -5,6 +5,7 @@ const fs = require('fs');
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
+  // Load cookies đăng nhập
   const cookies = JSON.parse(fs.readFileSync('cookies.json'));
   await page.setCookie(...cookies);
 
@@ -13,26 +14,65 @@ const fs = require('fs');
     timeout: 0
   });
 
-  await page.waitForSelector('div.Polaris-Table-TableCell__TableCellContent a[href*="/orders/"]');
+  const allOrders = [];
 
-  const orders = await page.evaluate(() => {
-    const links = Array.from(document.querySelectorAll(
-      'div.Polaris-Table-TableCell__TableCellContent a[href*="/orders/"]'
-    ));
+  while (true) {
+    await page.waitForSelector('div.Polaris-Table-TableCell__TableCellContent a[href*="/orders/"]');
 
-    return links.map(link => {
-      const orderNumber = link.innerText.trim();
-      let orderUrl = link.href || '';
-      if (orderUrl.startsWith('/')) {
-        orderUrl = `${location.origin}${orderUrl}`;
+    //Crawl link orders ở page hiện tại
+    const pageOrders = await page.evaluate(() => {
+      const links = Array.from(document.querySelectorAll(
+        'div.Polaris-Table-TableCell__TableCellContent a[href*="/orders/"]'
+      ));
+
+      return links.map(link => {
+        const orderNumber = link.innerText.trim();
+        let orderUrl = link.href || '';
+        if (orderUrl.startsWith('/')) {
+          orderUrl = `${location.origin}${orderUrl}`;
+        }
+        return { orderNumber, orderUrl };
+      }).filter(o => o.orderNumber && o.orderUrl);
+    });
+
+    console.log(`Đã crawl ${pageOrders.length} đơn trong trang hiện tại`);
+    allOrders.push(...pageOrders);
+
+    // Kiểm tra nút NEXT
+    const nextButton = await page.$('button[aria-label="Next"]');
+    if (nextButton) {
+      const isDisabled = await page.evaluate(el => el.getAttribute('aria-disabled') === 'true', nextButton);
+      if (isDisabled) {
+        console.log('Đã đến trang cuối. Kết thúc crawl!');
+        break;
       }
-      return { orderNumber, orderUrl };
-    }).filter(o => o.orderNumber && o.orderUrl);
-  });
 
-  console.log('Orders:', orders);
-  fs.writeFileSync('orders.json', JSON.stringify(orders, null, 2));
-  console.log('Đã lưu orders.json');
+      console.log('Chuyển sang trang tiếp theo...');
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle2' }),
+        nextButton.click()
+      ]);
+    } else {
+      console.log('Không tìm thấy nút Next, kết thúc crawl!');
+      break;
+    }
+  }
+
+  console.log(`Tổng số đơn crawl được: ${allOrders.length}`);
+
+  // ✅ Merge với orders.json cũ nếu có
+  let oldOrders = [];
+  if (fs.existsSync('orders.json')) {
+    oldOrders = JSON.parse(fs.readFileSync('orders.json'));
+  }
+
+  const merged = [
+    ...oldOrders,
+    ...allOrders.filter(n => !oldOrders.some(o => o.orderNumber === n.orderNumber))
+  ];
+
+  fs.writeFileSync('orders.json', JSON.stringify(merged, null, 2));
+  console.log(`Đã lưu ${merged.length} orders vào orders.json`);
 
   await browser.close();
 })();
