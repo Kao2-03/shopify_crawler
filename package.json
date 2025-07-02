@@ -1,14 +1,20 @@
 {
   "name": "shopify_crawler",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "webhook_server.js",
   "scripts": {
+    "start": "node webhook_server.js",
+    "crawl-orders": "node crawl_orders.js",
+    "docker:build": "docker build -t shopify-crawler .",
+    "docker:run": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["shopify", "crawler", "puppeteer", "webhook"],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Shopify order and customer crawler with webhook server",
   "dependencies": {
     "axios": "^1.10.0",
     "express": "^5.1.0",

@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const { exec } = require('child_process');
+const { crawlNewOrders } = require('./crawl_customers');
 
 const app = express();
 app.use(express.json());
@@ -13,30 +14,28 @@ app.post('/shopify-webhook', (req, res) => {
 
   console.log(`Đơn mới: ${orderNumber} - ${orderUrl}`);
 
-  // Ghi vào orders.json
-  let orders = [];
-  if (fs.existsSync('orders.json')) {
-    orders = JSON.parse(fs.readFileSync('orders.json'));
-  }
-  if (!orders.some(o => o.orderNumber === orderNumber)) {
-    orders.push({ orderNumber, orderUrl });
-    fs.writeFileSync('orders.json', JSON.stringify(orders, null, 2));
-    console.log(`Đã thêm ${orderNumber} vào orders.json`);
-  } else {
-    console.log(`⚠️ Đơn đã có trong orders.json`);
-  }
 
-  // Gọi Puppeteer crawl đơn này
-  exec('node crawl_customers.js', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Lỗi crawl: ${error.message}`);
-      return;
-    }
-    console.log(stdout);
-    if (stderr) console.error(stderr);
+  console.log(`Crawl đơn này ${orderUrl}`);
+  var orders = [];
+  orders.push({ orderNumber, orderUrl });
+  console.log('orders', orders);
+  const existingCustomers = []; // hoặc dữ liệu từ API khác
+  const cookies = JSON.parse(fs.readFileSync('cookies.json', 'utf-8'));
+
+  // crawl đơn hàng 
+  checking = crawlNewOrders({
+    orders: orders, 
+    existingCustomers: existingCustomers, 
+    cookies: cookies, 
+    headless: true, 
+    webhookUrl: 'https://n8n.bloommedia.space/webhook/e56662f8-0ffd-43df-8868-85b762928c58'
   });
-
-  res.status(200).send('OK');
+  if (checking) {
+    res.status(200).send('OK');
+  } else {
+    res.status(400).send('Error');
+    console.log('Error', checking);
+  }
 });
 
 app.listen(3000, () => {

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  shopify-crawler:
+    build: .
+    container_name: shopify_crawler
+    ports:
+      - "1300:3000"
+    volumes:
+      - ./data:/app/data
+      - ./cookies.json:/app/cookies.json:ro
+      - ./config.json:/app/config.json:ro
+      - ./orders.json:/app/orders.json
+      - ./customers.json:/app/customers.json
+    environment:
+      - NODE_ENV=production
+      - PUPPETEER_ARGS=--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-accelerated-2d-canvas --no-first-run --no-zygote --disable-gpu
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    shm_size: 2gb 
